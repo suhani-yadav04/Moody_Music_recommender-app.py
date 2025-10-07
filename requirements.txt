@@ -1,0 +1,7 @@
+@ -0,0 +1,6 @@
+mood_music_recommender/
+data mood_music_recommender/
+data/songs.csv mood_music_recommender/
+app.py mood_music_recommender/
+moody_model.py mood_music_recommender/
+requirements.txt
