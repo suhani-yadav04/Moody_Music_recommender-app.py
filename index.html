@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>MoodTunes — AI Song Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:       #0a0a0f;
+    --surface:  #12121a;
+    --card:     #1a1a26;
+    --border:   #2a2a3d;
+    --accent:   #a78bfa;
+    --accent2:  #ec4899;
+    --text:     #e8e8f0;
+    --muted:    #6b6b8a;
+    --success:  #34d399;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Animated background ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 60% 50% at 20% 20%, rgba(167,139,250,0.07) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 60% at 80% 80%, rgba(236,72,153,0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper {
+    position: relative; z-index: 1;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 3rem 1.5rem 5rem;
+  }
+
+  /* ── Header ── */
+  .header { text-align: center; margin-bottom: 3rem; }
+  .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.5rem, 6vw, 4rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .tagline {
+    margin-top: 0.5rem;
+    color: var(--muted);
+    font-size: 0.95rem;
+    letter-spacing: 0.04em;
+    font-weight: 300;
+  }
+  .tech-pill {
+    display: inline-block;
+    margin-top: 1rem;
+    padding: 4px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    background: var(--surface);
+  }
+
+  /* ── Input card ── */
+  .input-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+  }
+  .input-label {
+    display: block;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+  }
+  textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 300;
+    line-height: 1.7;
+    padding: 1rem 1.25rem;
+    resize: none;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  textarea:focus { border-color: var(--accent); }
+  textarea::placeholder { color: var(--muted); }
+
+  /* ── Example moods ── */
+  .examples {
+    display: flex; flex-wrap: wrap; gap: 8px;
+    margin-top: 1rem;
+  }
+  .ex-tag {
+    padding: 5px 14px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .ex-tag:hover { border-color: var(--accent); color: var(--accent); background: rgba(167,139,250,0.08); }
+
+  /* ── Button ── */
+  .btn {
+    margin-top: 1.25rem;
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn:active { transform: scale(0.99); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  /* ── How it works ── */
+  .how-it-works {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin-bottom: 2rem;
+  }
+  .step {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+  }
+  .step-num {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.5rem;
+    font-style: italic;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .step-title { font-size: 0.8rem; font-weight: 500; margin: 4px 0 2px; }
+  .step-desc  { font-size: 0.72rem; color: var(--muted); line-height: 1.5; }
+
+  /* ── Results ── */
+  #results { display: none; }
+  .results-header {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: var(--text);
+  }
+  .results-header span { font-style: italic; color: var(--accent); }
+
+  .song-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    opacity: 0;
+    transform: translateY(16px);
+    animation: slideUp 0.35s ease forwards;
+  }
+  @keyframes slideUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .rank {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.8rem;
+    font-style: italic;
+    color: var(--border);
+    min-width: 28px;
+    text-align: center;
+    line-height: 1;
+  }
+  .song-info { flex: 1; min-width: 0; }
+  .song-title  { font-size: 1rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .song-artist { font-size: 0.82rem; color: var(--muted); margin-top: 2px; }
+  .song-tags   { font-size: 0.72rem; color: var(--muted); margin-top: 6px; font-weight: 300; opacity: 0.7; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  /* Cosine similarity bar */
+  .score-col { text-align: right; min-width: 90px; }
+  .score-label { font-size: 0.7rem; color: var(--muted); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 4px; }
+  .score-val   { font-size: 0.95rem; font-weight: 500; color: var(--accent); }
+  .score-bar-track {
+    height: 4px; border-radius: 99px;
+    background: var(--border); margin-top: 6px;
+  }
+  .score-bar-fill {
+    height: 100%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.6s ease;
+  }
+
+  /* ── Error ── */
+  #error-msg {
+    display: none;
+    background: rgba(239,68,68,0.12);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #f87171;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    font-size: 0.88rem;
+    margin-top: 0.75rem;
+  }
+
+  /* ── Algorithm note ── */
+  .algo-note {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 0.9rem 1.1rem;
+    margin-bottom: 2rem;
+    font-size: 0.82rem;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+  .algo-note strong { color: var(--text); }
+
+  @media (max-width: 500px) {
+    .how-it-works { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo">MoodTunes</div>
+    <div class="tagline">Tell me how you feel. I'll find your song.</div>
+    <div class="tech-pill">TF-IDF · Cosine Similarity · scikit-learn</div>
+  </div>
+
+  <!-- Algorithm note -->
+  <div class="algo-note">
+    <strong>How the algorithm works:</strong> Your mood text is converted into a
+    <strong>TF-IDF vector</strong> — a numerical representation where each dimension
+    represents a word's importance. We then compute <strong>cosine similarity</strong>
+    between your vector and every song's mood vector, and return the closest matches.
+  </div>
+
+  <!-- How it works steps -->
+  <div class="how-it-works">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Type your mood</div>
+      <div class="step-desc">Describe how you feel in natural language</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">TF-IDF Vector</div>
+      <div class="step-desc">Text → numerical vector using term frequency</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Cosine Match</div>
+      <div class="step-desc">Closest songs by vector angle similarity</div>
+    </div>
+  </div>
+
+  <!-- Input -->
+  <div class="input-card">
+    <label class="input-label" for="mood-input">Describe your mood</label>
+    <textarea id="mood-input" rows="3"
+      placeholder="e.g. I feel sad and lonely after a breakup, missing someone…"></textarea>
+
+    <div class="examples">
+      <span style="font-size:0.78rem; color:var(--muted); align-self:center;">Try:</span>
+      <button class="ex-tag" onclick="setMood('feeling happy and energetic, want to dance')">happy &amp; energetic</button>
+      <button class="ex-tag" onclick="setMood('sad heartbreak missing someone lonely')">heartbreak</button>
+      <button class="ex-tag" onclick="setMood('motivated focused need to study and grind')">motivated &amp; focused</button>
+      <button class="ex-tag" onclick="setMood('calm peaceful relaxing want to sleep')">calm &amp; relaxed</button>
+      <button class="ex-tag" onclick="setMood('anxious stressed overwhelmed too much pressure')">stressed &amp; anxious</button>
+    </div>
+
+    <button class="btn" id="rec-btn" onclick="recommend()">Find My Songs →</button>
+    <div id="error-msg"></div>
+  </div>
+
+  <!-- Results -->
+  <div id="results">
+    <div class="results-header" id="results-title">Songs for your mood</div>
+    <div id="song-list"></div>
+  </div>
+
+</div>
+
+<script>
+function setMood(text) {
+  document.getElementById('mood-input').value = text;
+  document.getElementById('mood-input').focus();
+}
+
+async function recommend() {
+  const mood = document.getElementById('mood-input').value.trim();
+  const errEl = document.getElementById('error-msg');
+  errEl.style.display = 'none';
+
+  if (!mood) {
+    errEl.textContent = 'Please describe how you are feeling first.';
+    errEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('rec-btn');
+  btn.disabled = true;
+  btn.textContent = 'Analysing your mood…';
+
+  try {
+    const res = await fetch('/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mood })
+    });
+    const data = await res.json();
+
+    if (data.error) throw new Error(data.error);
+
+    renderResults(mood, data.songs);
+  } catch (e) {
+    errEl.textContent = 'Something went wrong: ' + e.message;
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Find My Songs →';
+  }
+}
+
+function renderResults(mood, songs) {
+  const container = document.getElementById('results');
+  const titleEl   = document.getElementById('results-title');
+  const listEl    = document.getElementById('song-list');
+
+  const shortMood = mood.length > 40 ? mood.slice(0, 40) + '…' : mood;
+  titleEl.innerHTML = `Songs matching <span>"${shortMood}"</span>`;
+
+  listEl.innerHTML = '';
+  const maxScore = songs[0]?.score || 1;
+
+  songs.forEach((song, i) => {
+    const pct = maxScore > 0 ? Math.round((song.score / maxScore) * 100) : 0;
+    const card = document.createElement('div');
+    card.className = 'song-card';
+    card.style.animationDelay = (i * 0.07) + 's';
+    card.innerHTML = `
+      <div class="rank">${i + 1}</div>
+      <div class="song-info">
+        <div class="song-title">\${song.title}</div>
+        <div class="song-artist">\${song.artist}</div>
+        <div class="song-tags">🏷 \${song.mood_tags}</div>
+      </div>
+      <div class="score-col">
+        <div class="score-label">Similarity</div>
+        <div class="score-val">${song.score.toFixed(4)}</div>
+        <div class="score-bar-track">
+          <div class="score-bar-fill" style="width:${pct}%"></div>
+        </div>
+      </div>
+    `;
+
+    listEl.appendChild(card);
+  });
+
+  container.style.display = 'block';
+  container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+document.getElementById('mood-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); recommend(); }
+});
+</script>
+</body>
+</html>
+
+
+
